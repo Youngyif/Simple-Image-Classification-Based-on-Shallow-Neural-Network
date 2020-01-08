@@ -6,28 +6,37 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 from tensorboardX import SummaryWriter
-
+import torchvision.models as models
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.features = nn.Sequential(
-            # define the extracting network here
-            nn.Conv2d(1,3,(7,7), 1,0,1,1,True,"zeros"),
-            nn.Conv2d (3, 3, (7, 7), 1, 0, 1, 1, True, "zeros"),
-            nn.Conv2d (3, 1, (3, 3), 1, 0, 1, 1, True, "zeros"),
-            nn.AvgPool2d(3,stride=2)
-        )
-        self.classifier = nn.Sequential(
-            # define the classifier network here
-            nn.Linear(36,10)
-            
-        )
+        self.net = models.resnet18 (pretrained=True)
+        self.inputmodel = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        self.features1 = nn.Sequential (*list (self.net.children ())[1:-1])
+        # print(self.features)
+        self.classifier = nn.Linear (512, 10)
+        self.features = nn.Sequential (self.inputmodel,
+                                       self.features1
+                                       )
+        # self.features = nn.Sequential(
+        #     # define the extracting network here
+        #     nn.Conv2d(1,3,(7,7), 1,0,1,1,True,"zeros"),
+        #     nn.Conv2d (3, 3, (7, 7), 1, 0, 1, 1, True, "zeros"),
+        #     nn.Conv2d (3, 1, (3, 3), 1, 0, 1, 1, True, "zeros"),
+        #     nn.AvgPool2d(3,stride=2)
+        # )
+        # self.classifier = nn.Sequential(
+        #     # define the classifier network here
+        #     nn.Linear(36,10)
+        #
+        # )
 
     def forward(self, x):
         # define the forward function here
         x = self.features(x)
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
+        # x = nn.Sigmoid(x)
         return F.log_softmax(x, dim=1)
 
 
